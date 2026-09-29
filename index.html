@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Birma AI Audit">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2563eb">
+<title>Birma AI Audit</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --border:#e2e5ea; --text:#1a1d23; --muted:#6b7280;
+  --accent:#2563eb; --danger:#dc2626; --warn:#d97706; --ok:#16a34a;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#14161a; --card:#1d2026; --border:#2b2f37; --text:#eceef1; --muted:#9aa1ac; }
+}
+:root[data-theme="dark"]{ --bg:#14161a; --card:#1d2026; --border:#2b2f37; --text:#eceef1; --muted:#9aa1ac; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;height:100%}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+.wrap{max-width:900px;margin:0 auto;padding:16px}
+h1{font-size:1.25rem;margin:4px 0 2px}
+.sub{color:var(--muted);font-size:.85rem;margin-bottom:16px}
+.tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+.tab{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.85rem;cursor:pointer;white-space:nowrap}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+label{font-size:.8rem;color:var(--muted);display:block;margin:10px 0 4px}
+input[type=text],input[type=number],select,textarea{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.9rem}
+button{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:.85rem;cursor:pointer}
+button.ghost{background:transparent;color:var(--text)}
+button.danger{background:var(--danger)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.step-row{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+.step-row:last-child{border-bottom:none}
+.badge{font-size:.7rem;padding:2px 8px;border-radius:999px;font-weight:600}
+.badge.ok{background:#dcfce7;color:var(--ok)}
+.badge.warn{background:#fef3c7;color:var(--warn)}
+.badge.danger{background:#fee2e2;color:var(--danger)}
+.score{font-size:2.2rem;font-weight:700}
+video{width:100%;border-radius:8px;background:#000;max-height:320px}
+.timeline{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.tl-item{display:flex;justify-content:space-between;font-size:.85rem;padding:6px 10px;border-radius:6px;background:var(--bg)}
+.session-item{padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer}
+.session-item:hover{border-color:var(--accent)}
+.muted{color:var(--muted);font-size:.8rem}
+.flag{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:8px;background:var(--bg);margin-bottom:6px;font-size:.85rem}
+.footer-links{text-align:center;font-size:.75rem;color:var(--muted);padding:20px 0 10px}
+.footer-links a{color:var(--muted)}
+.consent-banner{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--border);padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));font-size:.8rem;z-index:50;box-shadow:0 -4px 16px rgba(0,0,0,.12)}
+.spinner{width:18px;height:18px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.processing{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:8px;margin-top:8px}
+.progress-track{flex:1;height:8px;border-radius:999px;background:var(--border);overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:999px;transition:width .2s ease;width:0%}
+.video-loading{position:relative}
+.video-loading::after{content:'';position:absolute;top:50%;left:50%;width:32px;height:32px;margin:-16px 0 0 -16px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Birma AI Audit</h1>
+  <div class="sub">Define workflows, log what footage shows, get compliance scoring + reports.</div>
+  <div class="tabs">
+    <button class="tab active" data-tab="setup">Workflows</button>
+    <button class="tab" data-tab="clients">Clients</button>
+    <button class="tab" data-tab="audit">Run Audit</button>
+    <button class="tab" data-tab="auto">Auto-Analyze Footage</button>
+    <button class="tab" data-tab="dashboard">Dashboard</button>
+  </div>
+  <div id="content"><div><div class="card"><h3>New workflow</h3><label>Workflow name</label><input type="text" placeholder="Workflow name (e.g. Incoming Goods Inspection)"><label>Expected steps, in order (one per line). Add "::N" for a max minutes, e.g. "Scan barcode::2"</label><textarea rows="6" placeholder="Verify PPE worn::1
+Scan barcode
+Inspect for damage::3
+Log into system"></textarea><button style="margin-top:10px">Save workflow</button></div><div class="card"><h3>Existing workflows</h3><div class="muted">None yet — add one above.</div></div></div></div>
+  <div class="footer-links">
+    <a href="privacy-policy.html" target="_blank" rel="noopener">Privacy Policy</a> ·
+    <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>
+  </div>
+</div>
+<div id="consentBanner" class="consent-banner" style="display: none;">
+  <span>This app saves your workflows, clients, and audit data locally in your browser (not cookies, not sent to a server unless you use Auto-Analyze). Continue?</span>
+  <div class="row" style="margin-top:8px">
+    <button id="consentAccept">Accept</button>
+    <button id="consentDecline" class="ghost">Decline (session only)</button>
+  </div>
+</div>
+
+<script>
+let STATE = { workflows: [], sessions: [], autoAnalyses: [], clients: [] };
+let activeTab = 'setup';
+let artifactNs = null;
+let downloadsNs = null;
+let sampleNs = null;
+let currentVideoUrl = null;
+let currentLog = []; // {step, time}
+let autoVideoUrl = null;
+let autoRunning = false;
+
+function loadState(){
+  try{
+    const s = document.getElementById('__state__');
+    if(s) STATE = JSON.parse(s.textContent);
+    if(!STATE.autoAnalyses) STATE.autoAnalyses = [];
+    if(!STATE.clients) STATE.clients = [];
+  }catch(e){}
+  try{
+    const local = localStorage.getItem('birma_audit_state');
+    if(local) STATE = JSON.parse(local);
+    if(!STATE.autoAnalyses) STATE.autoAnalyses = [];
+    if(!STATE.clients) STATE.clients = [];
+  }catch(e){}
+}
+loadState();
+
+function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstElementChild; }
+function fmtTime(sec){
+  sec = Math.round(sec);
+  const m = Math.floor(sec/60), s = sec%60;
+  return m+':'+String(s).padStart(2,'0');
+}
+function safeFileName(s){ return (s||'file').replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,60) || 'file'; }
+// Seek the video to `time`, resolving once the frame is ready. Handles the
+// case where `time` is already the current position (no 'seeked' event
+// fires then) and falls back after a timeout so a stuck seek can never
+// hang the whole analysis run.
+function seekTo(video, time){
+  return new Promise(resolve=>{
+    if(Math.abs(video.currentTime - time) < 0.08){ resolve(); return; }
+    let done = false;
+    const finish = ()=>{ if(done) return; done = true; video.removeEventListener('seeked', onSeeked); clearTimeout(timer); resolve(); };
+    const onSeeked = ()=> finish();
+    video.addEventListener('seeked', onSeeked);
+    const timer = setTimeout(finish, 4000);
+    video.currentTime = time;
+  });
+}
+
+function render(){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===activeTab));
+  const c = document.getElementById('content');
+  c.innerHTML = '';
+  if(activeTab==='setup') c.appendChild(renderSetup());
+  if(activeTab==='clients') c.appendChild(renderClients());
+  if(activeTab==='audit') c.appendChild(renderAudit());
+  if(activeTab==='auto') c.appendChild(renderAutoAnalyze());
+  if(activeTab==='dashboard') c.appendChild(renderDashboard());
+}
+
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{activeTab=t.dataset.tab; render();}));
+
+/* ---------- SETUP ---------- */
+function renderSetup(){
+  const wrap = el('<div></div>');
+  const card = el('<div class="card"><h3>New workflow</h3></div>');
+  const nameInput = el('<input type="text" placeholder="Workflow name (e.g. Incoming Goods Inspection)">');
+  card.appendChild(el('<label>Workflow name</label>'));
+  card.appendChild(nameInput);
+  card.appendChild(el('<label>Expected steps, in order (one per line). Add "::N" for a max minutes, e.g. "Scan barcode::2"</label>'));
+  const stepsArea = el('<textarea rows="6" placeholder="Verify PPE worn::1\nScan barcode\nInspect for damage::3\nLog into system"></textarea>');
+  card.appendChild(stepsArea);
+  const saveBtn = el('<button style="margin-top:10px">Save workflow</button>');
+  saveBtn.onclick = ()=>{
+    const name = nameInput.value.trim();
+    const lines = stepsArea.value.split('\n').map(l=>l.trim()).filter(Boolean);
+    if(!name || !lines.length){ alert('Give the workflow a name and at least one step.'); return; }
+    const steps = lines.map(l=>{
+      const [label, mins] = l.split('::');
+      return { label: label.trim(), maxMinutes: mins ? parseFloat(mins) : null };
+    });
+    STATE.workflows.push({ id: 'wf_'+Date.now(), name, steps, created: new Date().toISOString() });
+    persist(); render();
+  };
+  card.appendChild(saveBtn);
+  wrap.appendChild(card);
+
+  const listCard = el('<div class="card"><h3>Existing workflows</h3></div>');
+  if(!STATE.workflows.length) listCard.appendChild(el('<div class="muted">None yet — add one above.</div>'));
+  STATE.workflows.forEach(wf=>{
+    const item = el('<div style="padding:8px 0;border-bottom:1px solid var(--border)"></div>');
+    item.appendChild(el('<b>'+escapeHtml(wf.name)+'</b>'));
+    item.appendChild(el('<div class="muted">'+wf.steps.length+' steps</div>'));
+    wf.steps.forEach(s=>{
+      item.appendChild(el('<div class="step-row">• '+escapeHtml(s.label)+(s.maxMinutes?' <span class="muted">(max '+s.maxMinutes+' min)</span>':'')+'</div>'));
+    });
+    const delBtn = el('<button class="ghost danger" style="margin-top:6px">Delete workflow</button>');
+    delBtn.onclick = ()=>{ if(confirm('Delete this workflow?')){ STATE.workflows = STATE.workflows.filter(w=>w.id!==wf.id); persist(); render(); } };
+    item.appendChild(delBtn);
+    listCard.appendChild(item);
+  });
+  wrap.appendChild(listCard);
+  return wrap;
+}
+
+/* ---------- AUDIT ---------- */
+function renderAudit(){
+  const wrap = el('<div></div>');
+  if(!STATE.workflows.length){
+    wrap.appendChild(el('<div class="card">Create a workflow first, in the Workflows tab.</div>'));
+    return wrap;
+  }
+  const card = el('<div class="card"><h3>Session info</h3></div>');
+  const siteInput = el('<input type="text" placeholder="Site / client name">');
+  card.appendChild(el('<label>Site or client</label>'));
+  card.appendChild(siteInput);
+  card.appendChild(el('<label>Workflow</label>'));
+  const wfSelect = el('<select></select>');
+  STATE.workflows.forEach(wf=> wfSelect.appendChild(el('<option value="'+wf.id+'">'+escapeHtml(wf.name)+'</option>')));
+  card.appendChild(wfSelect);
+  wrap.appendChild(card);
+
+  const videoCard = el('<div class="card"><h3>Footage</h3></div>');
+  videoCard.appendChild(el('<div class="muted">Load CCTV or egocentric footage, then log each step as it appears while you scrub through.</div>'));
+  const fileInput = el('<input type="file" accept="video/*,.mp4,.mov,.m4v,.avi,.mkv,.webm,.wmv,.flv,.3gp,.mpeg,.mpg" style="margin-top:8px">');
+  const video = el('<video controls style="margin-top:10px;display:none"></video>');
+  const videoWarn = el('<div class="muted" style="display:none;margin-top:6px;color:var(--warn)"></div>');
+  const loadStatus = el('<div class="processing" style="display:none"><span class="spinner"></span><span>Loading video…</span></div>');
+  video.onerror = ()=>{ loadStatus.style.display='none'; videoWarn.textContent = 'This browser can\'t play this file\'s format/codec. Try converting it to .mp4 (H.264), or open it in a different browser.'; videoWarn.style.display='block'; };
+  video.oncanplay = ()=>{ loadStatus.style.display='none'; video.classList.remove('video-loading'); };
+  video.onwaiting = ()=>{ video.classList.add('video-loading'); };
+  video.onplaying = ()=>{ video.classList.remove('video-loading'); };
+  fileInput.onchange = ()=>{
+    const f = fileInput.files[0];
+    if(!f) return;
+    videoWarn.style.display='none';
+    if(currentVideoUrl) URL.revokeObjectURL(currentVideoUrl);
+    currentVideoUrl = URL.createObjectURL(f);
+    video.src = currentVideoUrl;
+    video.style.display = 'block';
+    video.classList.add('video-loading');
+    loadStatus.style.display = 'flex';
+    currentLog = [];
+    renderLogArea();
+  };
+  videoCard.appendChild(fileInput);
+  videoCard.appendChild(video);
+  videoCard.appendChild(loadStatus);
+  videoCard.appendChild(videoWarn);
+  wrap.appendChild(videoCard);
+
+  const logCard = el('<div class="card"><h3>Step log</h3><div class="muted">Click a step at the moment it happens in the footage.</div></div>');
+  const stepButtons = el('<div class="row" style="margin-top:10px"></div>');
+  function refreshStepButtons(){
+    stepButtons.innerHTML = '';
+    const wf = STATE.workflows.find(w=>w.id===wfSelect.value);
+    if(!wf) return;
+    wf.steps.forEach(s=>{
+      const b = el('<button class="ghost">'+escapeHtml(s.label)+'</button>');
+      b.onclick = ()=>{
+        currentLog.push({ step: s.label, time: video.currentTime || 0 });
+        renderLogArea();
+      };
+      stepButtons.appendChild(b);
+    });
+  }
+  wfSelect.onchange = refreshStepButtons;
+  refreshStepButtons();
+  logCard.appendChild(stepButtons);
+  const logList = el('<div class="timeline"></div>');
+  logCard.appendChild(logList);
+  function renderLogArea(){
+    logList.innerHTML = '';
+    currentLog.forEach((entry,i)=>{
+      const row = el('<div class="tl-item"><span>'+escapeHtml(entry.step)+'</span><span>'+fmtTime(entry.time)+'</span></div>');
+      const rm = el('<button class="ghost" style="padding:2px 8px;margin-left:6px">✕</button>');
+      rm.onclick = ()=>{ currentLog.splice(i,1); renderLogArea(); };
+      row.appendChild(rm);
+      logList.appendChild(row);
+    });
+  }
+  wrap.appendChild(logCard);
+
+  const finishBtn = el('<button style="width:100%;padding:12px">Score this session & save</button>');
+  finishBtn.onclick = ()=>{
+    const wf = STATE.workflows.find(w=>w.id===wfSelect.value);
+    if(!wf){ alert('Pick a workflow.'); return; }
+    if(!currentLog.length){ alert('Log at least one step first.'); return; }
+    const sorted = [...currentLog].sort((a,b)=>a.time-b.time);
+    const session = scoreSession(wf, sorted, siteInput.value.trim() || 'Unnamed site');
+    STATE.sessions.unshift(session);
+    persist();
+    currentLog = [];
+    activeTab = 'dashboard';
+    render();
+  };
+  wrap.appendChild(finishBtn);
+  return wrap;
+}
+
+function scoreSession(wf, sortedLog, site){
+  const flags = [];
+  const observedLabels = sortedLog.map(e=>e.step);
+  const expectedOrder = wf.steps.map(s=>s.label);
+
+  // missing steps
+  expectedOrder.forEach(label=>{
+    if(!observedLabels.includes(label)) flags.push({ type:'missing', text: 'Step never observed: "'+label+'"' });
+  });
+
+  // out-of-order: check longest increasing subsequence against expected index
+  const idxSeq = observedLabels.map(l=>expectedOrder.indexOf(l)).filter(i=>i>=0);
+  let lastMax = -1, outOfOrderCount = 0;
+  idxSeq.forEach(i=>{ if(i < lastMax) outOfOrderCount++; else lastMax = i; });
+  if(outOfOrderCount>0) flags.push({ type:'order', text: outOfOrderCount+' step(s) occurred out of expected sequence' });
+
+  // overtime: gap between consecutive logged entries of steps with maxMinutes
+  for(let i=0;i<sortedLog.length-1;i++){
+    const stepDef = wf.steps.find(s=>s.label===sortedLog[i].step);
+    if(stepDef && stepDef.maxMinutes){
+      const gapMin = (sortedLog[i+1].time - sortedLog[i].time)/60;
+      if(gapMin > stepDef.maxMinutes) flags.push({ type:'overtime', text: '"'+sortedLog[i].step+'" ran '+gapMin.toFixed(1)+' min, over its '+stepDef.maxMinutes+' min limit' });
+    }
+  }
+
+  const passed = expectedOrder.length - expectedOrder.filter(l=>!observedLabels.includes(l)).length;
+  let score = Math.round((passed / expectedOrder.length) * 100);
+  score -= Math.min(20, outOfOrderCount*5);
+  score -= Math.min(20, flags.filter(f=>f.type==='overtime').length*5);
+  score = Math.max(0, Math.min(100, score));
+
+  return {
+    id: 'sess_'+Date.now(),
+    site, workflowId: wf.id, workflowName: wf.name,
+    date: new Date().toISOString(),
+    log: sortedLog, flags, score
+  };
+}
+
+/* ---------- CLIENTS ---------- */
+function renderClients(){
+  const wrap = el('<div></div>');
+  const card = el('<div class="card"><h3>Add client</h3></div>');
+  const nameI = el('<input type="text" placeholder="Client / company name">');
+  const emailI = el('<input type="text" placeholder="name@company.com">');
+  const otherI = el('<input type="text" placeholder="Phone, WhatsApp, or other contact">');
+  const notesI = el('<textarea rows="2" placeholder="Site address, contract notes, etc. (optional)"></textarea>');
+  card.appendChild(el('<label>Client name</label>')); card.appendChild(nameI);
+  card.appendChild(el('<label>Email</label>')); card.appendChild(emailI);
+  card.appendChild(el('<label>Other contact (phone / WhatsApp / etc.)</label>')); card.appendChild(otherI);
+  card.appendChild(el('<label>Notes</label>')); card.appendChild(notesI);
+  const saveBtn = el('<button style="margin-top:10px">Save client</button>');
+  saveBtn.onclick = ()=>{
+    const name = nameI.value.trim(), email = emailI.value.trim();
+    if(!name){ alert('Enter a client name.'); return; }
+    STATE.clients.unshift({ id:'cl_'+Date.now(), name, email, other: otherI.value.trim(), notes: notesI.value.trim() });
+    persist(); render();
+  };
+  card.appendChild(saveBtn);
+  wrap.appendChild(card);
+
+  const listCard = el('<div class="card"><h3>Clients</h3></div>');
+  if(!STATE.clients.length) listCard.appendChild(el('<div class="muted">No clients added yet.</div>'));
+  STATE.clients.forEach(cl=>{
+    const item = el('<div style="padding:10px 0;border-bottom:1px solid var(--border)"></div>');
+    item.appendChild(el('<b>'+escapeHtml(cl.name)+'</b>'));
+    if(cl.email) item.appendChild(el('<div><a href="mailto:'+encodeURIComponent(cl.email)+'">'+escapeHtml(cl.email)+'</a></div>'));
+    if(cl.other) item.appendChild(el('<div class="muted">'+escapeHtml(cl.other)+'</div>'));
+    if(cl.notes) item.appendChild(el('<div class="muted">'+escapeHtml(cl.notes)+'</div>'));
+    const delBtn = el('<button class="ghost danger" style="margin-top:6px">Delete</button>');
+    delBtn.onclick = ()=>{ if(confirm('Delete this client?')){ STATE.clients = STATE.clients.filter(c=>c.id!==cl.id); persist(); render(); } };
+    item.appendChild(delBtn);
+    listCard.appendChild(item);
+  });
+  wrap.appendChild(listCard);
+  return wrap;
+}
+
+/* ---------- AUTO-ANALYZE ---------- */
+function renderAutoAnalyze(){
+  const wrap = el('<div></div>');
+  wrap.appendChild(el('<div class="card"><div class="muted">Samples frames from the footage and asks Claude to judge active-vs-idle time, flag attentiveness/quality issues, and estimate productive ("good") hours. This is a frame-sampled estimate, not a certified measurement — spot-check results, and make sure footage-based monitoring here follows your local employment/privacy rules and that workers are informed. Note: this tab\'s AI analysis calls Claude directly through the claude.ai artifact runtime — if this file is self-hosted elsewhere, this tab will show as unavailable unless you wire it to your own Claude API backend.</div></div>'));
+
+  const card = el('<div class="card"><h3>Footage</h3></div>');
+  const labelInput = el('<input type="text" placeholder="Worker / station / shift label">');
+  card.appendChild(el('<label>Label this analysis</label>'));
+  card.appendChild(labelInput);
+  const fileInput = el('<input type="file" accept="video/*,.mp4,.mov,.m4v,.avi,.mkv,.webm,.wmv,.flv,.3gp,.mpeg,.mpg" style="margin-top:10px">');
+  const video = el('<video controls style="margin-top:10px;display:none"></video>');
+  const videoWarn = el('<div class="muted" style="display:none;margin-top:6px;color:var(--warn)"></div>');
+  const loadStatus = el('<div class="processing" style="display:none"><span class="spinner"></span><span>Loading video…</span></div>');
+  video.onerror = ()=>{ loadStatus.style.display='none'; videoWarn.textContent = 'This browser can\'t play this file\'s format/codec. Try converting it to .mp4 (H.264), or open it in a different browser.'; videoWarn.style.display='block'; };
+  video.oncanplay = ()=>{ loadStatus.style.display='none'; };
+  const canvas = document.createElement('canvas');
+  fileInput.onchange = ()=>{
+    const f = fileInput.files[0];
+    if(!f) return;
+    videoWarn.style.display='none';
+    if(autoVideoUrl) URL.revokeObjectURL(autoVideoUrl);
+    autoVideoUrl = URL.createObjectURL(f);
+    video.src = autoVideoUrl;
+    video.style.display = 'block';
+    loadStatus.style.display = 'flex';
+  };
+  card.appendChild(fileInput);
+  card.appendChild(video);
+  card.appendChild(loadStatus);
+  card.appendChild(videoWarn);
+  card.appendChild(el('<label>Sample every</label>'));
+  const intervalSel = el('<select>'+
+    '<option value="5">5 seconds</option>'+
+    '<option value="10">10 seconds</option>'+
+    '<option value="15">15 seconds</option>'+
+    '<option value="20">20 seconds</option>'+
+    '<option value="25">25 seconds</option>'+
+    '<option value="30" selected>30 seconds</option>'+
+    '<option value="35">35 seconds</option>'+
+    '<option value="45">45 seconds</option>'+
+    '<option value="60">1 minute</option>'+
+    '<option value="90">1.5 minutes</option>'+
+    '<option value="120">2 minutes</option>'+
+    '<option value="180">3 minutes</option>'+
+    '<option value="240">4 minutes</option>'+
+    '<option value="300">5 minutes</option>'+
+    '</select>');
+  card.appendChild(intervalSel);
+  const runBtn = el('<button style="margin-top:12px;width:100%;padding:12px">Analyze footage</button>');
+  const status = el('<div class="processing" style="display:none"><span class="spinner"></span><div style="flex:1"><div id="statusText" style="margin-bottom:6px"></div><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div></div></div>');
+  const statusText = status.querySelector('#statusText');
+  const progressFill = status.querySelector('#progressFill');
+  function setProgress(text, pct){
+    status.style.display = 'flex';
+    statusText.textContent = text;
+    progressFill.style.width = Math.max(0,Math.min(100,pct))+'%';
+  }
+  const resultsBox = el('<div style="margin-top:10px"></div>');
+  card.appendChild(runBtn);
+  card.appendChild(status);
+  card.appendChild(resultsBox);
+  wrap.appendChild(card);
+
+  runBtn.onclick = async ()=>{
+    if(autoRunning) return;
+    if(!video.src){ alert('Load a video first.'); return; }
+    if(!sampleNs){ status.style.display='flex'; statusText.textContent='Frame analysis isn\'t available in this view.'; progressFill.style.width='0%'; return; }
+    autoRunning = true; runBtn.disabled = true; fileInput.disabled = true; intervalSel.disabled = true; resultsBox.innerHTML=''; setProgress('Checking capabilities...', 2);
+    try{
+      const limits = await sampleNs.limits();
+      if(!limits.images){ status.style.display='flex'; statusText.textContent='This view cannot send images for analysis.'; progressFill.style.width='0%'; autoRunning=false; runBtn.disabled=false; fileInput.disabled=false; intervalSel.disabled=false; return; }
+      await new Promise(res=>{ if(video.readyState>=1) res(); else video.onloadedmetadata = res; });
+      const interval = parseInt(intervalSel.value,10);
+      const maxFrames = 30;
+      const desiredCount = Math.max(1, Math.floor(video.duration/interval));
+      let timestamps;
+      if(desiredCount <= maxFrames){
+        timestamps = Array.from({length:desiredCount}, (_,i)=> Math.min(video.duration-0.2, (i+1)*interval));
+      } else {
+        // too many samples at this interval for this video length — spread evenly across the whole clip instead
+        timestamps = Array.from({length:maxFrames}, (_,i)=> Math.min(video.duration-0.2, ((i+1)/maxFrames)*video.duration));
+      }
+      canvas.width = 320; canvas.height = 180;
+      const effectiveIntervalSec = timestamps.length>1 ? (timestamps[1]-timestamps[0]) : interval;
+      const downsampled = desiredCount > maxFrames;
+      const frames = [];
+      for(let i=0;i<timestamps.length;i++){
+        setProgress('Capturing frame '+(i+1)+' of '+timestamps.length+'...', ((i+1)/timestamps.length)*50);
+        await seekTo(video, timestamps[i]);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise(res=> canvas.toBlob(res, 'image/jpeg', 0.7));
+        if(blob) frames.push({ t: timestamps[i], blob });
+      }
+      const batchSize = Math.max(1, Math.min(limits.images.maxCount||4, 4));
+      const results = [];
+      for(let i=0;i<frames.length;i+=batchSize){
+        const batch = frames.slice(i, i+batchSize);
+        setProgress('Analyzing frames '+(i+1)+'-'+(i+batch.length)+' of '+frames.length+'...', 50 + ((i+batch.length)/frames.length)*50);
+        const labels = batch.map((f,j)=> 'Frame '+(j+1)+': timestamp '+fmtTime(f.t)).join('\n');
+        const prompt = 'These are frames sampled from workplace footage, in order.\n'+labels+
+          '\nFor each frame, judge whether a worker visible in it appears actively engaged in task work versus idle/inactive/absent, and give a short quality or attentiveness note. '+
+          'Reply with ONLY a JSON array, one object per frame in order: {"frame": number, "activity": "active"|"idle"|"unclear", "note": string (max 15 words)}.';
+        try{
+          const data = await sampleNs.json(prompt, { images: batch.map(f=>f.blob), modelTier:'quick' });
+          if(Array.isArray(data)){
+            data.forEach((d,j)=>{ if(batch[j]) results.push({ t: batch[j].t, activity: d.activity||'unclear', note: d.note||'' }); });
+          }
+        }catch(e){
+          results.push(...batch.map(f=>({ t:f.t, activity:'unclear', note:'(analysis failed for this frame: '+(e.code||'error')+')' })));
+        }
+      }
+      status.style.display='none';
+      const analysis = {
+        id:'auto_'+Date.now(), label: labelInput.value.trim()||'Unlabeled', date:new Date().toISOString(),
+        intervalSec: effectiveIntervalSec, requestedIntervalSec: interval, downsampled, frames: results
+      };
+      STATE.autoAnalyses.unshift(analysis);
+      persist();
+      renderAutoResults(resultsBox, analysis);
+    }catch(e){
+      status.style.display='flex'; statusText.textContent = 'Analysis stopped: '+(e.code||e.message||'error'); progressFill.style.width='0%';
+    }
+    autoRunning = false; runBtn.disabled = false; fileInput.disabled = false; intervalSel.disabled = false;
+  };
+
+  if(STATE.autoAnalyses.length){
+    const histCard = el('<div class="card"><h3>Past analyses</h3></div>');
+    STATE.autoAnalyses.forEach(a=>{
+      const item = el('<div class="session-item"></div>');
+      const activePct = a.frames.length ? Math.round(100*a.frames.filter(f=>f.activity==='active').length/a.frames.length) : 0;
+      item.innerHTML = '<div class="row" style="justify-content:space-between"><div><b>'+escapeHtml(a.label)+'</b><div class="muted">'+new Date(a.date).toLocaleString()+'</div></div><span class="badge '+(activePct>=70?'ok':activePct>=40?'warn':'danger')+'">'+activePct+'% active</span></div>';
+      item.onclick = ()=>{ resultsBox.innerHTML=''; renderAutoResults(resultsBox, a); resultsBox.scrollIntoView({behavior:'smooth'}); };
+      histCard.appendChild(item);
+    });
+    wrap.appendChild(histCard);
+  }
+  return wrap;
+}
+
+function renderAutoResults(box, analysis){
+  box.innerHTML = '';
+  const total = analysis.frames.length;
+  const activeCount = analysis.frames.filter(f=>f.activity==='active').length;
+  const idleCount = analysis.frames.filter(f=>f.activity==='idle').length;
+  const pct = total ? Math.round(100*activeCount/total) : 0;
+  const goodHours = (activeCount*analysis.intervalSec/3600).toFixed(2);
+  const summary = el('<div class="row" style="justify-content:space-between;margin-top:6px"></div>');
+  summary.appendChild(el('<div><div class="muted">Active (efficiency)</div><div class="score">'+pct+'%</div></div>'));
+  summary.appendChild(el('<div><div class="muted">Est. productive hours sampled</div><div class="score">'+goodHours+'</div></div>'));
+  summary.appendChild(el('<div><div class="muted">Idle frames</div><div class="score">'+idleCount+'/'+total+'</div></div>'));
+  box.appendChild(summary);
+  if(analysis.downsampled){
+    box.appendChild(el('<div class="muted" style="margin-top:6px">Requested every '+analysis.requestedIntervalSec+'s, but this clip is long enough that sampling was spread to roughly every '+Math.round(analysis.intervalSec)+'s to keep coverage across the whole video.</div>'));
+  }
+  const tl = el('<div class="timeline" style="margin-top:10px"></div>');
+  analysis.frames.forEach(f=>{
+    const cls = f.activity==='active'?'ok':(f.activity==='idle'?'danger':'warn');
+    tl.appendChild(el('<div class="tl-item"><span><span class="badge '+cls+'">'+f.activity+'</span> '+fmtTime(f.t)+'</span><span class="muted">'+escapeHtml(f.note||'')+'</span></div>'));
+  });
+  box.appendChild(tl);
+  const dl = el('<button style="margin-top:10px">Download report</button>');
+  dl.onclick = ()=> downloadAutoReport(analysis);
+  box.appendChild(dl);
+}
+
+function buildAutoReportText(a){
+  const total = a.frames.length;
+  const activeCount = a.frames.filter(f=>f.activity==='active').length;
+  const pct = total ? Math.round(100*activeCount/total) : 0;
+  const goodHours = (activeCount*a.intervalSec/3600).toFixed(2);
+  let t = 'FOOTAGE ANALYSIS REPORT\n=======================\n\n';
+  t += 'Label: '+a.label+'\nDate: '+new Date(a.date).toLocaleString()+'\n';
+  t += 'Sampling interval: every '+a.intervalSec+'s ('+total+' frames)\n';
+  t += 'Active/efficiency estimate: '+pct+'%\nEstimated productive hours sampled: '+goodHours+'\n\n';
+  t += 'FRAME-BY-FRAME\n--------------\n';
+  a.frames.forEach(f=> t += fmtTime(f.t)+'  ['+f.activity.toUpperCase()+']  '+(f.note||'')+'\n');
+  t += '\nNote: frame-sampled AI estimate, not a certified measurement.\n';
+  return t;
+}
+async function downloadAutoReport(a){
+  const text = buildAutoReportText(a);
+  if(downloadsNs){
+    try{ await downloadsNs.save({ filename:'footage-analysis-'+safeFileName(a.label)+'-'+a.id+'.txt', data:text }); return; }catch(e){}
+  }
+  const blob = new Blob([text], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a'); link.href=url; link.download='footage-analysis.txt'; link.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- DASHBOARD ---------- */
+function renderDashboard(){
+  const wrap = el('<div></div>');
+  if(!STATE.sessions.length){
+    wrap.appendChild(el('<div class="card">No audits logged yet — run one from the Run Audit tab.</div>'));
+    return wrap;
+  }
+  const avg = Math.round(STATE.sessions.reduce((a,s)=>a+s.score,0)/STATE.sessions.length);
+  const summary = el('<div class="card row" style="justify-content:space-between"></div>');
+  summary.appendChild(el('<div><div class="muted">Average compliance</div><div class="score">'+avg+'%</div></div>'));
+  summary.appendChild(el('<div><div class="muted">Sessions logged</div><div class="score">'+STATE.sessions.length+'</div></div>'));
+  wrap.appendChild(summary);
+
+  const listCard = el('<div class="card"><h3>Sessions</h3></div>');
+  STATE.sessions.forEach(sess=>{
+    const badgeClass = sess.score>=85?'ok':(sess.score>=60?'warn':'danger');
+    const item = el('<div class="session-item"></div>');
+    item.innerHTML = '<div class="row" style="justify-content:space-between">'+
+      '<div><b>'+escapeHtml(sess.site)+'</b><div class="muted">'+escapeHtml(sess.workflowName)+' · '+new Date(sess.date).toLocaleString()+'</div></div>'+
+      '<span class="badge '+badgeClass+'">'+sess.score+'%</span></div>';
+    item.onclick = ()=> showSessionDetail(sess);
+    listCard.appendChild(item);
+  });
+  wrap.appendChild(listCard);
+
+  const detailCard = el('<div class="card" id="detailCard" style="display:none"></div>');
+  wrap.appendChild(detailCard);
+
+  function showSessionDetail(sess){
+    detailCard.style.display = 'block';
+    detailCard.innerHTML = '';
+    detailCard.appendChild(el('<h3>'+escapeHtml(sess.site)+' — '+escapeHtml(sess.workflowName)+'</h3>'));
+    detailCard.appendChild(el('<div class="muted">'+new Date(sess.date).toLocaleString()+' · score '+sess.score+'%</div>'));
+    if(sess.flags.length){
+      const flagsWrap = el('<div style="margin-top:10px"></div>');
+      sess.flags.forEach(f=>{
+        const cls = f.type==='missing'?'danger':(f.type==='overtime'?'warn':'warn');
+        flagsWrap.appendChild(el('<div class="flag"><span class="badge '+cls+'">'+f.type+'</span><span>'+escapeHtml(f.text)+'</span></div>'));
+      });
+      detailCard.appendChild(flagsWrap);
+    } else {
+      detailCard.appendChild(el('<div class="flag"><span class="badge ok">clean</span><span>No deviations flagged.</span></div>'));
+    }
+    const dl = el('<button style="margin-top:10px">Download report</button>');
+    dl.onclick = ()=> downloadReport(sess);
+    detailCard.appendChild(dl);
+    const delSess = el('<button class="ghost danger" style="margin-top:10px;margin-left:8px">Delete session</button>');
+    delSess.onclick = ()=>{ if(confirm('Delete this session?')){ STATE.sessions = STATE.sessions.filter(s=>s.id!==sess.id); persist(); render(); } };
+    detailCard.appendChild(delSess);
+    detailCard.scrollIntoView({behavior:'smooth'});
+  }
+  return wrap;
+}
+
+function buildReportText(sess){
+  let t = 'PROCESS COMPLIANCE AUDIT REPORT\n';
+  t += '================================\n\n';
+  t += 'Site/client: '+sess.site+'\n';
+  t += 'Workflow: '+sess.workflowName+'\n';
+  t += 'Date: '+new Date(sess.date).toLocaleString()+'\n';
+  t += 'Compliance score: '+sess.score+'%\n\n';
+  t += 'OBSERVED STEP LOG\n------------------\n';
+  sess.log.forEach(e=> t += fmtTime(e.time)+'  '+e.step+'\n');
+  t += '\nFLAGGED ISSUES\n--------------\n';
+  if(!sess.flags.length) t += 'None — no deviations detected.\n';
+  else sess.flags.forEach(f=> t += '- ['+f.type.toUpperCase()+'] '+f.text+'\n');
+  return t;
+}
+
+async function downloadReport(sess){
+  const text = buildReportText(sess);
+  if(downloadsNs){
+    try{
+      await downloadsNs.save({ filename: 'audit-report-'+safeFileName(sess.site)+'-'+sess.id+'.txt', data: text });
+      return;
+    }catch(e){}
+  }
+  // fallback
+  const blob = new Blob([text], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'audit-report.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function persist(){
+  // Try browser localStorage first — this is what makes data persist when
+  // this file is self-hosted (outside the claude.ai artifact runtime).
+  try{
+    const consent = localStorage.getItem('birma_consent');
+    if(consent !== 'no') localStorage.setItem('birma_audit_state', JSON.stringify(STATE));
+  }catch(e){}
+
+  // If running inside a claude.ai artifact, also persist via its state API.
+  // Update the state <script> element IN THE LIVE DOM first, then serialize —
+  // never do text-surgery on the page's own outerHTML, since that string
+  // contains this very source code and a regex can match into itself.
+  if(artifactNs){
+    const stateEls = document.querySelectorAll('script[id="__state__"]');
+    let stateEl = stateEls[0];
+    if(!stateEl){
+      stateEl = document.createElement('script');
+      stateEl.id = '__state__';
+      stateEl.type = 'application/json';
+      document.body.appendChild(stateEl);
+    }
+    stateEl.textContent = JSON.stringify(STATE);
+    for(let i=1;i<stateEls.length;i++) stateEls[i].remove(); // drop any duplicates from earlier saves
+    const fullHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    try{ await artifactNs.publish(fullHtml); }catch(e){}
+  }
+}
+
+render();
+(async function initCapabilities(){
+  try{
+    if(window.claude){
+      artifactNs = await window.claude.use('artifact');
+      downloadsNs = await window.claude.use('downloads');
+      sampleNs = await window.claude.use('sample');
+    }
+  }catch(e){}
+})();
+
+// Client-side HTTPS fallback. Real enforcement belongs in your host/CDN
+// (e.g. force-HTTPS redirect at the server, or HSTS header) — this is a
+// backstop for when this file is opened over plain http on a real domain.
+(function enforceHttps(){
+  if(location.protocol === 'http:' && !['localhost','127.0.0.1'].includes(location.hostname)){
+    location.replace('https://' + location.host + location.pathname + location.search);
+  }
+})();
+
+// Storage consent banner (localStorage, not cookies — but same idea).
+(function consentInit(){
+  const banner = document.getElementById('consentBanner');
+  let choice = null;
+  try{ choice = localStorage.getItem('birma_consent'); }catch(e){}
+  if(!choice) banner.style.display = 'block';
+  document.getElementById('consentAccept').onclick = ()=>{
+    try{ localStorage.setItem('birma_consent','yes'); }catch(e){}
+    banner.style.display = 'none';
+  };
+  document.getElementById('consentDecline').onclick = ()=>{
+    try{ localStorage.setItem('birma_consent','no'); localStorage.removeItem('birma_audit_state'); }catch(e){}
+    banner.style.display = 'none';
+  };
+})();
+</script>
+<script id="__state__" type="application/json">{"workflows":[],"sessions":[],"autoAnalyses":[],"clients":[]}</script>
+
+
+</body></html>
